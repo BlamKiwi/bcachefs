@@ -1809,6 +1809,13 @@ int bch2_trans_mark_update(struct btree_trans *trans,
 	if (unlikely(trans->flags & BTREE_INSERT_NOMARK_OVERWRITES))
 		return 0;
 
+	if (btree_iter_type(iter) == BTREE_ITER_CACHED) {
+		struct bkey_cached *ck = (void *) iter->l[0].b;
+
+		return bch2_trans_mark_key(trans, bkey_i_to_s_c(ck->k),
+					   0, 0, BCH_BUCKET_MARK_OVERWRITE);
+	}
+
 	while ((_k = bch2_btree_node_iter_peek_filter(&node_iter, b,
 						      KEY_TYPE_discard))) {
 		struct bkey		unpacked;

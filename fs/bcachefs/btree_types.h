@@ -63,12 +63,12 @@ struct btree_alloc {
 
 struct btree {
 	/* Hottest entries first */
+	struct six_lock		lock;
+
 	struct rhash_head	hash;
 
 	/* Key/pointer for this btree node */
 	__BKEY_PADDED(key, BKEY_BTREE_PTR_VAL_U64s_MAX);
-
-	struct six_lock		lock;
 
 	unsigned long		flags;
 	u16			written;
@@ -181,20 +181,27 @@ struct btree_node_iter {
 enum btree_iter_type {
 	BTREE_ITER_KEYS,
 	BTREE_ITER_NODES,
+	BTREE_ITER_CACHED,
 };
 
 #define BTREE_ITER_TYPE			((1 << 2) - 1)
 
 #define BTREE_ITER_SLOTS		(1 << 2)
 #define BTREE_ITER_INTENT		(1 << 3)
-#define BTREE_ITER_PREFETCH		(1 << 4)
-#define BTREE_ITER_KEEP_UNTIL_COMMIT	(1 << 5)
+#define BTREE_ITER_CACHED_NOFILL	(1 << 4)
+#define BTREE_ITER_PREFETCH		(1 << 5)
+
+#define BTREE_ITER_USER_FLAGS				\
+	(BTREE_ITER_SLOTS|BTREE_ITER_INTENT|		\
+	 BTREE_ITER_CACHED_NOFILL|BTREE_ITER_PREFETCH)
+
+#define BTREE_ITER_KEEP_UNTIL_COMMIT	(1 << 6)
 /*
  * Used in bch2_btree_iter_traverse(), to indicate whether we're searching for
  * @pos or the first key strictly greater than @pos
  */
-#define BTREE_ITER_IS_EXTENTS		(1 << 6)
-#define BTREE_ITER_ERROR		(1 << 7)
+#define BTREE_ITER_IS_EXTENTS		(1 << 7)
+#define BTREE_ITER_ERROR		(1 << 8)
 
 enum btree_iter_uptodate {
 	BTREE_ITER_UPTODATE		= 0,
@@ -211,12 +218,12 @@ enum btree_iter_uptodate {
  * @nodes_intent_locked	- bitmask indicating which locks are intent locks
  */
 struct btree_iter {
-	u8			idx;
+	u16			flags;
 
 	struct btree_trans	*trans;
 	struct bpos		pos;
 
-	u8			flags;
+	u8			idx;
 	enum btree_iter_uptodate uptodate:4;
 	enum btree_id		btree_id:4;
 	unsigned		level:4,
@@ -237,10 +244,40 @@ struct btree_iter {
 	struct bkey		k;
 };
 
-static inline enum btree_iter_type btree_iter_type(struct btree_iter *iter)
+static inline enum btree_iter_type
+btree_iter_type(const struct btree_iter *iter)
 {
 	return iter->flags & BTREE_ITER_TYPE;
 }
+
+struct btree_key_cache {
+	struct mutex		lock;
+	struct rhashtable	table;
+	struct list_head	freed;
+	struct list_head	clean;
+};
+
+struct bkey_cached_key {
+	u8			btree_id;
+	struct bpos		pos;
+} __packed;
+
+#define BKEY_CACHED_DIRTY		0
+
+struct bkey_cached {
+	struct six_lock		lock;
+	unsigned long		flags;
+	u8			u64s;
+	struct bkey_cached_key	key;
+
+	struct rhash_head	hash;
+	struct list_head	list;
+
+	struct journal_preres	res;
+	struct journal_entry_pin journal;
+
+	struct bkey_i		*k;
+};
 
 struct btree_insert_entry {
 	struct bkey_i		*k;

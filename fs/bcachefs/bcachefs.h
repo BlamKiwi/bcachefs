@@ -614,6 +614,8 @@ struct bch_fs {
 
 	mempool_t		btree_iters_pool;
 
+	struct btree_key_cache	btree_key_cache;
+
 	struct workqueue_struct	*wq;
 	/* copygc needs its own workqueue for index updates.. */
 	struct workqueue_struct	*copygc_wq;

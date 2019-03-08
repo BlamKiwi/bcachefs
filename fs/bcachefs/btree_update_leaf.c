@@ -6,6 +6,7 @@
 #include "btree_gc.h"
 #include "btree_io.h"
 #include "btree_iter.h"
+#include "btree_key_cache.h"
 #include "btree_locking.h"
 #include "buckets.h"
 #include "debug.h"
@@ -38,6 +39,9 @@ inline void bch2_btree_node_lock_for_insert(struct bch_fs *c, struct btree *b,
 					    struct btree_iter *iter)
 {
 	bch2_btree_node_lock_write(b, iter);
+
+	if (btree_iter_type(iter) == BTREE_ITER_CACHED)
+		return;
 
 	if (unlikely(btree_node_just_written(b)) &&
 	    bch2_btree_post_write_cleanup(c, b))
@@ -282,6 +286,8 @@ static void btree_insert_key_leaf(struct btree_trans *trans,
 	trace_btree_insert_key(c, b, insert->k);
 }
 
+/* Cached btree updates: */
+
 /* Normal update interface: */
 
 static inline void btree_insert_entry_checks(struct btree_trans *trans,
@@ -361,10 +367,35 @@ btree_key_can_insert(struct btree_trans *trans,
 	return BTREE_INSERT_OK;
 }
 
+static enum btree_insert_ret
+btree_key_can_insert_cached(struct btree_trans *trans,
+			    struct btree_insert_entry *insert,
+			    unsigned *u64s)
+{
+	struct bkey_cached *ck = (void *) insert->iter->l[0].b;
+
+	if (*u64s > ck->u64s) {
+		unsigned new_u64s = roundup_pow_of_two(*u64s);
+		struct bkey_i *new_k = krealloc(ck->k,
+				new_u64s * sizeof(u64), GFP_NOFS);
+
+		if (!new_k)
+			return -ENOMEM;
+
+		ck->u64s = new_u64s;
+		ck->k = new_k;
+	}
+
+	return BTREE_INSERT_OK;
+}
+
 static inline void do_btree_insert_one(struct btree_trans *trans,
 				       struct btree_insert_entry *insert)
 {
-	btree_insert_key_leaf(trans, insert);
+	if (btree_iter_type(insert->iter) != BTREE_ITER_CACHED)
+		btree_insert_key_leaf(trans, insert);
+	else
+		bch2_btree_insert_key_cached(trans, insert);
 }
 
 static inline bool update_has_trans_triggers(struct btree_insert_entry *i)
@@ -395,10 +426,16 @@ static noinline void bch2_trans_mark_gc(struct btree_trans *trans)
 	if (unlikely(trans->flags & BTREE_INSERT_NOMARK))
 		return;
 
-	trans_for_each_update(trans, i)
+	trans_for_each_update(trans, i) {
+		/*
+		 * XXX: synchronization of cached update triggers with gc
+		 */
+		BUG_ON(btree_iter_type(i->iter) == BTREE_ITER_CACHED);
+
 		if (gc_visited(c, gc_pos_btree_node(i->iter->l[0].b)))
 			bch2_mark_update(trans, i, NULL,
 					 mark_flags|BCH_BUCKET_MARK_GC);
+	}
 }
 
 static inline int
@@ -434,7 +471,9 @@ bch2_trans_commit_write_locked(struct btree_trans *trans,
 			u64s = 0;
 
 		u64s += i->k->k.u64s;
-		ret = btree_key_can_insert(trans, i, &u64s);
+		ret = btree_iter_type(i->iter) != BTREE_ITER_CACHED
+			? btree_key_can_insert(trans, i, &u64s)
+			: btree_key_can_insert_cached(trans, i, &u64s);
 		if (ret) {
 			*stopped_at = i;
 			return ret;
@@ -539,7 +578,7 @@ static inline int do_bch2_trans_commit(struct btree_trans *trans,
 		}
 
 		u64s = jset_u64s(i->k->k.u64s);
-		if (0)
+		if (btree_iter_type(i->iter) == BTREE_ITER_CACHED)
 			journal_preres_u64s += u64s;
 		trans->journal_u64s += u64s;
 	}
@@ -604,7 +643,8 @@ static inline int do_bch2_trans_commit(struct btree_trans *trans,
 		trans->nounlock = true;
 
 	trans_for_each_update_sorted(trans, i, idx)
-		if (!same_leaf_as_prev(trans, idx))
+		if (btree_iter_type(i->iter) != BTREE_ITER_CACHED &&
+		    !same_leaf_as_prev(trans, idx))
 			bch2_foreground_maybe_merge(trans->c, i->iter,
 						    0, trans->flags);
 
@@ -839,10 +879,14 @@ retry:
 
 	iter = bch2_trans_get_iter(&trans, id, bkey_start_pos(&k->k),
 				   BTREE_ITER_INTENT);
+	ret = bch2_btree_iter_traverse(iter);
+	if (ret)
+		goto err;
 
 	bch2_trans_update(&trans, iter, k);
 
 	ret = bch2_trans_commit(&trans, disk_res, journal_seq, flags);
+err:
 	if (ret == -EINTR)
 		goto retry;
 	bch2_trans_exit(&trans);
