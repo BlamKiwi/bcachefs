@@ -284,8 +284,6 @@ static inline int bkey_err(struct bkey_s_c k)
 int bch2_trans_iter_put(struct btree_trans *, struct btree_iter *);
 int bch2_trans_iter_free(struct btree_trans *, struct btree_iter *);
 
-void bch2_trans_unlink_iters(struct btree_trans *);
-
 struct btree_iter *bch2_trans_get_iter(struct btree_trans *, enum btree_id,
 				       struct bpos, unsigned);
 struct btree_iter *bch2_trans_copy_iter(struct btree_trans *,
@@ -294,19 +292,21 @@ struct btree_iter *bch2_trans_get_node_iter(struct btree_trans *,
 				enum btree_id, struct bpos,
 				unsigned, unsigned, unsigned);
 
-#define TRANS_RESET_ITERS		(1 << 0)
-#define TRANS_RESET_MEM			(1 << 1)
+#define TRANS_RESET_TRAVERSE		(1 << 0)
+#define TRANS_RESET_ITERS		(1 << 1)
 
 void bch2_trans_reset(struct btree_trans *, unsigned);
 
 static inline void bch2_trans_begin(struct btree_trans *trans)
 {
-	return bch2_trans_reset(trans, TRANS_RESET_ITERS|TRANS_RESET_MEM);
+	return bch2_trans_reset(trans,
+				TRANS_RESET_TRAVERSE|
+				TRANS_RESET_ITERS);
 }
 
 static inline void bch2_trans_begin_updates(struct btree_trans *trans)
 {
-	return bch2_trans_reset(trans, TRANS_RESET_MEM);
+	return bch2_trans_reset(trans, TRANS_RESET_TRAVERSE);
 }
 
 void *bch2_trans_kmalloc(struct btree_trans *, size_t);

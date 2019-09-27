@@ -187,21 +187,25 @@ enum btree_iter_type {
 #define BTREE_ITER_TYPE			((1 << 2) - 1)
 
 #define BTREE_ITER_SLOTS		(1 << 2)
-#define BTREE_ITER_INTENT		(1 << 3)
-#define BTREE_ITER_CACHED_NOFILL	(1 << 4)
-#define BTREE_ITER_PREFETCH		(1 << 5)
+#define BTREE_ITER_LINKED		(1 << 3)
+#define BTREE_ITER_LIVE			(1 << 4)
+#define BTREE_ITER_TOUCHED		(1 << 5)
+#define BTREE_ITER_KEEP_UNTIL_COMMIT	(1 << 6)
+
+#define BTREE_ITER_INTENT		(1 << 7)
+#define BTREE_ITER_PREFETCH		(1 << 8)
+#define BTREE_ITER_CACHED_NOFILL	(1 << 9)
 
 #define BTREE_ITER_USER_FLAGS				\
 	(BTREE_ITER_SLOTS|BTREE_ITER_INTENT|		\
 	 BTREE_ITER_CACHED_NOFILL|BTREE_ITER_PREFETCH)
 
-#define BTREE_ITER_KEEP_UNTIL_COMMIT	(1 << 6)
 /*
  * Used in bch2_btree_iter_traverse(), to indicate whether we're searching for
  * @pos or the first key strictly greater than @pos
  */
-#define BTREE_ITER_IS_EXTENTS		(1 << 7)
-#define BTREE_ITER_ERROR		(1 << 8)
+#define BTREE_ITER_IS_EXTENTS		(1 << 10)
+#define BTREE_ITER_ERROR		(1 << 11)
 
 enum btree_iter_uptodate {
 	BTREE_ITER_UPTODATE		= 0,
@@ -218,7 +222,7 @@ enum btree_iter_uptodate {
  * @nodes_intent_locked	- bitmask indicating which locks are intent locks
  */
 struct btree_iter {
-	u16			flags;
+	unsigned		flags;
 
 	struct btree_trans	*trans;
 	struct bpos		pos;
@@ -291,8 +295,6 @@ struct btree_trans {
 	unsigned long		ip;
 
 	u64			iters_linked;
-	u64			iters_live;
-	u64			iters_touched;
 
 	u8			nr_iters;
 	u8			nr_updates;
