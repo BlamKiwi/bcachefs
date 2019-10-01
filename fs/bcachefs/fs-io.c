@@ -166,7 +166,7 @@ struct inode_new_size {
 	unsigned	fields;
 };
 
-static int inode_set_size(struct bch_inode_info *inode,
+static int inode_set_size(struct btree_trans *trans,
 			  struct bch_inode_unpacked *bi,
 			  void *p)
 {
@@ -2194,7 +2194,7 @@ static int bch2_truncate_page(struct bch_inode_info *inode, loff_t from)
 				    from, round_up(from, PAGE_SIZE));
 }
 
-static int bch2_extend_fn(struct bch_inode_info *inode,
+static int bch2_extend_fn(struct btree_trans *trans,
 			  struct bch_inode_unpacked *bi,
 			  void *p)
 {
@@ -2231,7 +2231,7 @@ static int bch2_extend(struct bch_inode_info *inode,
 	return bch2_write_inode(c, inode, bch2_extend_fn, iattr);
 }
 
-static int bch2_truncate_finish_fn(struct bch_inode_info *inode,
+static int bch2_truncate_finish_fn(struct btree_trans *trans,
 				   struct bch_inode_unpacked *bi,
 				   void *p)
 {
@@ -2239,7 +2239,7 @@ static int bch2_truncate_finish_fn(struct bch_inode_info *inode,
 	return 0;
 }
 
-static int bch2_truncate_start_fn(struct bch_inode_info *inode,
+static int bch2_truncate_start_fn(struct btree_trans *trans,
 				  struct bch_inode_unpacked *bi, void *p)
 {
 	struct bch_fs *c = inode->v.i_sb->s_fs_info;
