@@ -1405,6 +1405,9 @@ static int trans_get_key(struct btree_trans *trans,
 			 struct bkey_s_c *k)
 {
 	struct btree_insert_entry *i;
+	unsigned flags = btree_id != BTREE_ID_ALLOC
+		? BTREE_ITER_SLOTS
+		: BTREE_ITER_CACHED;
 	int ret;
 
 	trans_for_each_update(trans, i)
@@ -1419,11 +1422,11 @@ static int trans_get_key(struct btree_trans *trans,
 		}
 
 	*iter = bch2_trans_get_iter(trans, btree_id, pos,
-				    BTREE_ITER_SLOTS|BTREE_ITER_INTENT);
+				    flags|BTREE_ITER_INTENT);
 	if (IS_ERR(*iter))
 		return PTR_ERR(*iter);
 
-	*k = bch2_btree_iter_peek_slot(*iter);
+	*k = __bch2_btree_iter_peek(*iter, flags);
 	ret = bkey_err(*k);
 	if (ret)
 		bch2_trans_iter_put(trans, *iter);
