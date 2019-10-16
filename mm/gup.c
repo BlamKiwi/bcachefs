@@ -828,7 +828,7 @@ static long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 			}
 
 			if (!vma || check_vma_flags(vma, gup_flags)) {
-				ret = -EFAULT;
+				ret = -EINVAL;
 				goto out;
 			}
 			if (is_vm_hugetlb_page(vma)) {
@@ -848,6 +848,13 @@ retry:
 			goto out;
 		}
 		cond_resched();
+
+		if (current->faults_disabled_mapping &&
+		    vma->vm_file &&
+		    vma->vm_file->f_mapping == current->faults_disabled_mapping) {
+			ret = -EFAULT;
+			goto out;
+		}
 
 		page = follow_page_mask(vma, start, foll_flags, &ctx);
 		if (!page) {
