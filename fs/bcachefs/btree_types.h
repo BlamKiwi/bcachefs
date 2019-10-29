@@ -3,11 +3,11 @@
 #define _BCACHEFS_BTREE_TYPES_H
 
 #include <linux/list.h>
-#include <linux/rhashtable.h>
 #include <linux/six.h>
 
 #include "bkey_methods.h"
 #include "buckets_types.h"
+#include "hashtable.h"
 #include "journal_types.h"
 
 struct open_bucket;
@@ -65,7 +65,7 @@ struct btree {
 	/* Hottest entries first */
 	struct six_lock		lock;
 
-	struct rhash_head	hash;
+	struct hlist_node	hash;
 
 	/* Key/pointer for this btree node */
 	__BKEY_PADDED(key, BKEY_BTREE_PTR_VAL_U64s_MAX);
@@ -137,7 +137,7 @@ struct btree {
 };
 
 struct btree_cache {
-	struct rhashtable	table;
+	struct htable		table;
 	bool			table_init_done;
 	/*
 	 * We never free a struct btree, except on shutdown - we just put it on
@@ -252,7 +252,7 @@ btree_iter_type(const struct btree_iter *iter)
 
 struct btree_key_cache {
 	struct mutex		lock;
-	struct rhashtable	table;
+	struct htable		table;
 	struct list_head	freed;
 	struct list_head	clean;
 };
@@ -270,7 +270,7 @@ struct bkey_cached {
 	u8			u64s;
 	struct bkey_cached_key	key;
 
-	struct rhash_head	hash;
+	struct hlist_node	hash;
 	struct list_head	list;
 
 	struct journal_preres	res;

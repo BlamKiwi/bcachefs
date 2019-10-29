@@ -56,20 +56,10 @@ static void btree_node_data_free(struct bch_fs *c, struct btree *b)
 	list_move(&b->list, &bc->freed);
 }
 
-static int bch2_btree_cache_cmp_fn(struct rhashtable_compare_arg *arg,
-				   const void *obj)
-{
-	const struct btree *b = obj;
-	const u64 *v = arg->key;
-
-	return PTR_HASH(&b->key) == *v ? 0 : 1;
-}
-
-static const struct rhashtable_params bch_btree_cache_params = {
+static const struct htable_params bch_btree_cache_params = {
 	.head_offset	= offsetof(struct btree, hash),
 	.key_offset	= offsetof(struct btree, key.v),
 	.key_len	= sizeof(struct bch_extent_ptr),
-	.obj_cmpfn	= bch2_btree_cache_cmp_fn,
 };
 
 static void btree_node_data_alloc(struct bch_fs *c, struct btree *b, gfp_t gfp)
@@ -111,7 +101,7 @@ static struct btree *btree_node_mem_alloc(struct bch_fs *c, gfp_t gfp)
 
 void bch2_btree_node_hash_remove(struct btree_cache *bc, struct btree *b)
 {
-	rhashtable_remove_fast(&bc->table, &b->hash, bch_btree_cache_params);
+	htable_remove(&bc->table, b, bch_btree_cache_params);
 
 	/* Cause future lookups for this node to fail: */
 	PTR_HASH(&b->key) = 0;
@@ -119,8 +109,7 @@ void bch2_btree_node_hash_remove(struct btree_cache *bc, struct btree *b)
 
 int __bch2_btree_node_hash_insert(struct btree_cache *bc, struct btree *b)
 {
-	return rhashtable_lookup_insert_fast(&bc->table, &b->hash,
-					     bch_btree_cache_params);
+	return htable_insert(&bc->table, b, bch_btree_cache_params);
 }
 
 int bch2_btree_node_hash_insert(struct btree_cache *bc, struct btree *b,
@@ -142,10 +131,9 @@ int bch2_btree_node_hash_insert(struct btree_cache *bc, struct btree *b,
 
 __flatten
 static inline struct btree *btree_cache_find(struct btree_cache *bc,
-				     const struct bkey_i *k)
+					     const struct bkey_i *k)
 {
-	return rhashtable_lookup_fast(&bc->table, &PTR_HASH(k),
-				      bch_btree_cache_params);
+	return htable_lookup(&bc->table, &PTR_HASH(k), bch_btree_cache_params);
 }
 
 /*
@@ -369,7 +357,7 @@ void bch2_fs_btree_cache_exit(struct bch_fs *c)
 	mutex_unlock(&bc->lock);
 
 	if (bc->table_init_done)
-		rhashtable_destroy(&bc->table);
+		bch2_htable_exit(&bc->table);
 }
 
 int bch2_fs_btree_cache_init(struct bch_fs *c)
@@ -380,7 +368,7 @@ int bch2_fs_btree_cache_init(struct bch_fs *c)
 
 	pr_verbose_init(c->opts, "");
 
-	ret = rhashtable_init(&bc->table, &bch_btree_cache_params);
+	ret = bch2_htable_init(&bc->table);
 	if (ret)
 		goto out;
 

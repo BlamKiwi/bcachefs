@@ -1626,13 +1626,12 @@ void bch2_btree_node_write(struct bch_fs *c, struct btree *b,
 
 static void __bch2_btree_flush_all(struct bch_fs *c, unsigned flag)
 {
-	struct bucket_table *tbl;
-	struct rhash_head *pos;
+	struct htable_ptr tbl;
 	struct btree *b;
 	unsigned i;
 restart:
 	rcu_read_lock();
-	for_each_cached_btree(b, c, tbl, i, pos)
+	for_each_cached_btree(b, c, tbl, i)
 		if (test_bit(flag, &b->flags)) {
 			rcu_read_unlock();
 			wait_on_bit_io(&b->flags, flag, TASK_UNINTERRUPTIBLE);
@@ -1654,13 +1653,12 @@ void bch2_btree_flush_all_writes(struct bch_fs *c)
 
 void bch2_btree_verify_flushed(struct bch_fs *c)
 {
-	struct bucket_table *tbl;
-	struct rhash_head *pos;
+	struct htable_ptr tbl;
 	struct btree *b;
 	unsigned i;
 
 	rcu_read_lock();
-	for_each_cached_btree(b, c, tbl, i, pos) {
+	for_each_cached_btree(b, c, tbl, i) {
 		unsigned long flags = READ_ONCE(b->flags);
 
 		BUG_ON((flags & (1 << BTREE_NODE_dirty)) ||
@@ -1672,13 +1670,12 @@ void bch2_btree_verify_flushed(struct bch_fs *c)
 ssize_t bch2_dirty_btree_nodes_print(struct bch_fs *c, char *buf)
 {
 	struct printbuf out = _PBUF(buf, PAGE_SIZE);
-	struct bucket_table *tbl;
-	struct rhash_head *pos;
+	struct htable_ptr tbl;
 	struct btree *b;
 	unsigned i;
 
 	rcu_read_lock();
-	for_each_cached_btree(b, c, tbl, i, pos) {
+	for_each_cached_btree(b, c, tbl, i) {
 		unsigned long flags = READ_ONCE(b->flags);
 		unsigned idx = (flags & (1 << BTREE_NODE_write_idx)) != 0;
 

@@ -44,11 +44,10 @@ static inline bool btree_node_hashed(struct btree *b)
 		PTR_HASH(&b->key);
 }
 
-#define for_each_cached_btree(_b, _c, _tbl, _iter, _pos)		\
-	for ((_tbl) = rht_dereference_rcu((_c)->btree_cache.table.tbl,	\
-					  &(_c)->btree_cache.table),	\
-	     _iter = 0;	_iter < (_tbl)->size; _iter++)			\
-		rht_for_each_entry_rcu((_b), (_pos), _tbl, _iter, hash)
+#define for_each_cached_btree(_b, _c, _tbl, _iter)			\
+	for ((_tbl) = htable_read_ptr(&(_c)->btree_cache.table),	\
+	     _iter = 0;	_iter < (_tbl).size; _iter++)			\
+	     hlist_for_each_entry_rcu(_b, tbl.table + _iter, hash)
 
 static inline size_t btree_bytes(struct bch_fs *c)
 {

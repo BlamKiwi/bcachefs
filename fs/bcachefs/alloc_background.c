@@ -1436,8 +1436,7 @@ int bch2_dev_allocator_start(struct bch_dev *ca)
 
 static bool flush_held_btree_writes(struct bch_fs *c)
 {
-	struct bucket_table *tbl;
-	struct rhash_head *pos;
+	struct htable_ptr tbl;
 	struct btree *b;
 	bool nodes_unwritten;
 	size_t i;
@@ -1449,7 +1448,7 @@ again:
 		return true;
 
 	rcu_read_lock();
-	for_each_cached_btree(b, c, tbl, i, pos)
+	for_each_cached_btree(b, c, tbl, i)
 		if (btree_node_need_write(b)) {
 			if (btree_node_may_write(b)) {
 				rcu_read_unlock();

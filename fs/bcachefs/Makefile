@@ -32,6 +32,7 @@ bcachefs-y		:=	\
 	fs-ioctl.o		\
 	fs-io.o			\
 	fsck.o			\
+	hashtable.o		\
 	inode.o			\
 	io.o			\
 	journal.o		\
