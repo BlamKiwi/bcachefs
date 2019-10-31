@@ -395,7 +395,7 @@ void __bch2_time_stats_update(struct time_stats *stats, u64, u64);
 
 static inline void bch2_time_stats_update(struct time_stats *stats, u64 start)
 {
-	__bch2_time_stats_update(stats, start, local_clock());
+	//__bch2_time_stats_update(stats, start, local_clock());
 }
 
 size_t bch2_time_stats_print(struct time_stats *, char *, size_t);
