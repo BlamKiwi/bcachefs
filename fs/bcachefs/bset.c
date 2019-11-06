@@ -1236,8 +1236,12 @@ void bch2_bset_delete(struct btree *b,
 
 /* Lookup */
 
+struct bkey_range {
+	struct bkey_packed *l, *r;
+};
+
 __flatten
-static struct bkey_packed *bset_search_write_set(const struct btree *b,
+static struct bkey_range bset_search_write_set(const struct btree *b,
 				struct bset_tree *t,
 				struct bpos *search,
 				const struct bkey_packed *packed_search)
@@ -1253,7 +1257,10 @@ static struct bkey_packed *bset_search_write_set(const struct btree *b,
 			r = m;
 	}
 
-	return rw_aux_to_bkey(b, t, l);
+	return (struct bkey_range) {
+		.l = rw_aux_to_bkey(b, t, l),
+		.r = r < t->size ? rw_aux_to_bkey(b, t, r) : btree_bkey_last(b, t),
+	};
 }
 
 static inline void prefetch_four_cachelines(void *p)
@@ -1291,7 +1298,7 @@ static inline bool bkey_mantissa_bits_dropped(const struct btree *b,
 }
 
 __flatten
-static struct bkey_packed *bset_search_tree(const struct btree *b,
+static struct bkey_range bset_search_tree(const struct btree *b,
 				struct bset_tree *t,
 				struct bpos *search,
 				const struct bkey_packed *packed_search)
@@ -1331,17 +1338,32 @@ slowpath:
 	} while (n < t->size);
 
 	inorder = __eytzinger1_to_inorder(n >> 1, t->size, t->extra);
+	k = cacheline_to_bkey(b, t, inorder, f->key_offset);
 
 	/*
 	 * n would have been the node we recursed to - the low bit tells us if
 	 * we recursed left or recursed right.
 	 */
-	if (likely(!(n & 1))) {
-		--inorder;
-		if (unlikely(!inorder))
-			return btree_bkey_first(b, t);
+	if (n & 1) {
+		n = eytzinger1_next(n >> 1, t->size);
 
-		f = &base->f[eytzinger1_prev(n >> 1, t->size)];
+		return (struct bkey_range) {
+			.l = k,
+			.r = (n
+			      ? cacheline_to_bkey(b, t, inorder + 1,
+						  base->f[n].key_offset)
+			      : btree_bkey_last(b, t)),
+		};
+	} else {
+		n = eytzinger1_prev(n >> 1, t->size);
+
+		return (struct bkey_range) {
+			.l = (n
+			      ? cacheline_to_bkey(b, t, inorder - 1,
+						  base->f[n].key_offset)
+			      : btree_bkey_first(b, t)),
+			.r = k,
+		};
 	}
 
 	return cacheline_to_bkey(b, t, inorder, f->key_offset);
@@ -1353,6 +1375,7 @@ struct bkey_packed *__bch2_bset_search(struct btree *b,
 				struct bpos *search,
 				const struct bkey_packed *lossy_packed_search)
 {
+	struct bkey_range r;
 
 	/*
 	 * First, we search for a cacheline, then lastly we do a linear search
@@ -1371,9 +1394,12 @@ struct bkey_packed *__bch2_bset_search(struct btree *b,
 
 	switch (bset_aux_tree_type(t)) {
 	case BSET_NO_AUX_TREE:
-		return btree_bkey_first(b, t);
+		r.l = btree_bkey_first(b, t);
+		r.r = btree_bkey_last(b, t);
+		break;
 	case BSET_RW_AUX_TREE:
-		return bset_search_write_set(b, t, search, lossy_packed_search);
+		r = bset_search_write_set(b, t, search, lossy_packed_search);
+		break;
 	case BSET_RO_AUX_TREE:
 		/*
 		 * Each node in the auxiliary search tree covers a certain range
@@ -1385,10 +1411,16 @@ struct bkey_packed *__bch2_bset_search(struct btree *b,
 		if (bkey_cmp(*search, t->max_key) > 0)
 			return btree_bkey_last(b, t);
 
-		return bset_search_tree(b, t, search, lossy_packed_search);
+		r = bset_search_tree(b, t, search, lossy_packed_search);
+		break;
 	default:
 		unreachable();
 	}
+
+	EBUG_ON(r.r != btree_bkey_last(b, t) &&
+		bkey_iter_pos_cmp(b, search, r.r) > 0);
+
+	return r.l;
 }
 
 static __always_inline __flatten
