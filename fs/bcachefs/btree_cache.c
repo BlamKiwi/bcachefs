@@ -739,6 +739,7 @@ retry:
 	wait_on_bit_io(&b->flags, BTREE_NODE_read_in_flight,
 		       TASK_UNINTERRUPTIBLE);
 
+	prefetch(&b->format);
 	prefetch(b->aux_data);
 
 	for_each_bset(b, t) {
