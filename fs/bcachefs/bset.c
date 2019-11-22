@@ -256,7 +256,7 @@ void bch2_verify_insert_pos(struct btree *b, struct bkey_packed *where,
 		      "prev    key %5u %s\n"
 		      "insert  key %5u %s\n",
 		       __btree_node_key_to_offset(b, prev), buf1,
-		       __btree_node_key_to_offset(b, insert), buf2);
+		       0, buf2);
 	}
 #endif
 #if 0

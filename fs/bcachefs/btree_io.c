@@ -169,8 +169,8 @@ bool __bch2_compact_whiteouts(struct bch_fs *c, struct btree *b,
 		for (k = start; k != end; k = n) {
 			n = bkey_next_skip_noops(k, end);
 
-			if (bkey_deleted(k) && btree_node_is_extents(b))
-				continue;
+			//if (bkey_deleted(k) && btree_node_is_extents(b))
+			//	continue;
 
 			if (bkey_whiteout(k) && !k->needs_whiteout)
 				continue;
@@ -200,7 +200,7 @@ bool __bch2_compact_whiteouts(struct bch_fs *c, struct btree *b,
 	BUG_ON((void *) unwritten_whiteouts_start(c, b) <
 	       (void *) btree_bkey_last(b, bset_tree_last(b)));
 
-	u64s = (btree_node_is_extents(b)
+	u64s = (0 && btree_node_is_extents(b)
 		? bch2_sort_extent_whiteouts
 		: bch2_sort_key_whiteouts)(unwritten_whiteouts_start(c, b),
 					   &sort_iter);
@@ -867,7 +867,7 @@ int bch2_btree_node_read_done(struct bch_fs *c, struct btree *b, bool have_retry
 
 	set_btree_bset(b, b->set, &b->data->keys);
 
-	b->nr = btree_node_is_extents(b)
+	b->nr = 0 && btree_node_is_extents(b)
 		? bch2_extent_sort_fix_overlapping(c, &sorted->keys, b, iter)
 		: bch2_key_sort_fix_overlapping(&sorted->keys, b, iter);
 
