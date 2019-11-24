@@ -286,6 +286,24 @@ static void extent_sort_append(struct bch_fs *c,
 	bkey_reassemble((void *) *prev, k.s_c);
 }
 
+/*
+ * In extent_sort_fix_overlapping(), insert_fixup_extent(),
+ * extent_merge_inline() - we're modifying keys in place that are packed. To do
+ * that we have to unpack the key, modify the unpacked key - then this
+ * copies/repacks the unpacked to the original as necessary.
+ */
+static inline void extent_save(struct btree *b, struct bkey_packed *dst,
+			       struct bkey *src)
+{
+	struct bkey_format *f = &b->format;
+	struct bkey_i *dst_unpacked;
+
+	if ((dst_unpacked = packed_to_bkey(dst)))
+		dst_unpacked->k = *src;
+	else
+		BUG_ON(!bch2_bkey_pack_key(dst, src, f));
+}
+
 struct btree_nr_keys bch2_extent_sort_fix_overlapping(struct bch_fs *c,
 					struct bset *dst,
 					struct btree *b,
@@ -454,7 +472,7 @@ static inline int sort_keys_cmp(struct btree *b,
 				struct bkey_packed *r)
 {
 	return bkey_cmp_packed(b, l, r) ?:
-		(int) bkey_whiteout(r) - (int) bkey_whiteout(l) ?:
+		(int) bkey_deleted(r) - (int) bkey_deleted(l) ?:
 		(int) l->needs_whiteout - (int) r->needs_whiteout;
 }
 

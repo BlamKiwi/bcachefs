@@ -313,10 +313,10 @@ static void btree_node_sort(struct bch_fs *c, struct btree *b,
 
 	start_time = local_clock();
 
-	if (btree_node_is_extents(b))
+	if (0 && btree_node_is_extents(b))
 		filter_whiteouts = bset_written(b, start_bset);
 
-	u64s = (btree_node_is_extents(b)
+	u64s = (0 && btree_node_is_extents(b)
 		? bch2_sort_extents
 		: bch2_sort_keys)(out->keys.start,
 				  &sort_iter,

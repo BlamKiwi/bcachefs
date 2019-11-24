@@ -281,7 +281,7 @@ static void extent_bset_insert(struct bch_fs *c, struct btree_iter *iter,
 
 	BUG_ON(insert->k.u64s > bch_btree_keys_u64s_remaining(c, l->b));
 
-	EBUG_ON(bkey_deleted(&insert->k) || !insert->k.size);
+	//EBUG_ON(bkey_deleted(&insert->k) || !insert->k.size);
 	verify_extent_nonoverlapping(c, l->b, &l->iter, insert);
 
 	if (debug_check_bkeys(c))
@@ -289,6 +289,39 @@ static void extent_bset_insert(struct bch_fs *c, struct btree_iter *iter,
 
 	bch2_bset_insert(l->b, &l->iter, k, insert, 0);
 	bch2_btree_node_iter_fix(iter, l->b, &l->iter, k, 0, k->u64s);
+}
+
+static void extent_bset_rewind_insert(struct bch_fs *c,
+				      struct btree_iter *iter,
+				      struct bkey_i *insert)
+{
+	struct btree_iter_level *l = &iter->l[0];
+	struct btree_node_iter node_iter = l->iter;
+	struct bkey_packed *k;
+
+	while ((k = bch2_btree_node_iter_prev_all(&node_iter, l->b)) &&
+	       bkey_cmp_left_packed(l->b, k, &insert->k.p) > 0)
+		l->iter = node_iter;
+
+	extent_bset_insert(c, iter, insert);
+}
+
+/*
+ * In extent_sort_fix_overlapping(), insert_fixup_extent(),
+ * extent_merge_inline() - we're modifying keys in place that are packed. To do
+ * that we have to unpack the key, modify the unpacked key - then this
+ * copies/repacks the unpacked to the original as necessary.
+ */
+static inline void extent_save(struct btree *b, struct bkey_packed *dst,
+			       struct bkey *src)
+{
+	struct bkey_format *f = &b->format;
+	struct bkey_i *dst_unpacked;
+
+	if ((dst_unpacked = packed_to_bkey(dst)))
+		dst_unpacked->k = *src;
+	else
+		BUG_ON(!bch2_bkey_pack_key(dst, src, f));
 }
 
 static void
@@ -368,7 +401,8 @@ extent_squash(struct bch_fs *c, struct btree_iter *iter,
 			tmp.k->k.needs_whiteout = false;
 
 			extent_drop(c, iter, _k, k);
-			extent_bset_insert(c, iter, tmp.k);
+
+			extent_bset_rewind_insert(c, iter, tmp.k);
 		} else {
 			if (k.k->needs_whiteout) {
 				k.k->needs_whiteout = false;
@@ -405,6 +439,7 @@ extent_squash(struct bch_fs *c, struct btree_iter *iter,
 			k.k->needs_whiteout = false;
 
 			extent_drop(c, iter, _k, k);
+			extent_bset_rewind_insert(c, iter, split.k);
 			extent_bset_insert(c, iter, tmp.k);
 		} else {
 			btree_keys_account_val_delta(l->b, _k,
@@ -412,9 +447,10 @@ extent_squash(struct bch_fs *c, struct btree_iter *iter,
 
 			extent_save(l->b, _k, k.k);
 			bch2_btree_iter_fix_key_modified(iter, l->b, _k);
+
+			extent_bset_rewind_insert(c, iter, split.k);
 		}
 
-		extent_bset_insert(c, iter, split.k);
 		break;
 	}
 
@@ -513,7 +549,7 @@ void bch2_insert_fixup_extent(struct btree_trans *trans,
 			insert->k.type = KEY_TYPE_discard;
 
 		//if (!bkey_whiteout(&insert->k))
-		extent_bset_insert(c, iter, insert);
+		extent_bset_rewind_insert(c, iter, insert);
 
 		bch2_btree_journal_key(trans, iter, insert);
 	}
