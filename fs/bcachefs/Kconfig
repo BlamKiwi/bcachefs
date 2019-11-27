@@ -48,3 +48,39 @@ config BCACHEFS_TESTS
 	depends on BCACHEFS_FS
 	---help---
 	Include some unit and performance tests for the core btree code
+
+config BCACHEFS_ISAL_BACKEND
+	bool "bcachefs ISA-L acceleration" 
+	depends on BCACHEFS_FS
+	---help---
+	ISA-L is a collection of optimized low-level functions targeting 
+	storage applications. Includes GF(256) Erasure Coding, CRC, RAID XOR, 
+	RAID P+Q and DEFALTE. Enabling this build option will complement Kernel 
+	provided functions with vendor optimized functions. 
+	
+	* RAID5
+	* RAID6
+	* CRC32C
+	* CRC64
+	* GZIP Compression
+
+	A CPU with one of following instruction sets is recommended:
+
+	* SSE2
+	* SSE4_2
+	* AVX2
+	* AVX512
+	* NEON
+
+config BCACHEFS_ERASURE
+	bool "bcachefs Erasure Coding support"
+	depends on BCACHEFS_ISAL_BACKEND
+	---help---
+	Enables generalized Erasure Coding support as an alternative to 
+	RAID5/6 for higher resiliency. 
+
+config BCACHEFS_ISAL_TESTS
+	bool "bcachefs ISA-L compatibility tests"
+	depends on BCACHEFS_ISAL_BACKEND
+	---help---
+	Include some compatibility tests to ensure ISA-L is compatible with Kernel primitives.
