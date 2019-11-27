@@ -1,7 +1,7 @@
 
-obj-$(CONFIG_BCACHEFS_FS)	+= bcachefs.o
+obj-$(CONFIG_BCACHEFS_FS)		+= bcachefs.o
 
-bcachefs-y		:=	\
+bcachefs-y	:=	\
 	acl.o			\
 	alloc_background.o	\
 	alloc_foreground.o	\
@@ -56,3 +56,4 @@ bcachefs-y		:=	\
 	trace.o			\
 	util.o			\
 	xattr.o
+
