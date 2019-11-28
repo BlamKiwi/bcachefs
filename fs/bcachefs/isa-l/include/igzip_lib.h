@@ -71,7 +71,7 @@
  *   IGZIP_HIST_SIZE=8*1024" @endverbatim on Windows.
  *
  */
-#include <stdint.h>
+#include <linux/types.h>
 
 #ifdef __cplusplus
 extern "C" {

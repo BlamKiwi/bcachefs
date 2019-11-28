@@ -30,8 +30,8 @@
 #ifndef UNALIGNED_H
 #define UNALIGNED_H
 
-#include "stdint.h"
-#include "string.h"
+#include <linux/types.h>
+#include <linux/string.h>
 
 static inline uint16_t load_u16(uint8_t * buf) {
 	uint16_t ret;
@@ -51,8 +51,8 @@ static inline uint64_t load_u64(uint8_t * buf) {
 	return ret;
 }
 
-static inline uintmax_t load_umax(uint8_t * buf) {
-	uintmax_t ret;
+static inline size_t load_umax(uint8_t * buf) {
+	size_t ret;
 	memcpy(&ret, buf, sizeof(ret));
 	return ret;
 }
@@ -69,7 +69,7 @@ static inline void store_u64(uint8_t * buf, uint64_t val) {
 	memcpy(buf, &val, sizeof(val));
 }
 
-static inline void store_umax(uint8_t * buf, uintmax_t val) {
+static inline void store_umax(uint8_t * buf, size_t val) {
 	memcpy(buf, &val, sizeof(val));
 }
 

@@ -29,7 +29,7 @@
 
 #include "crc.h"
 #include "crc64.h"
-#include <stdint.h>
+#include <linux/types.h>
 
 unsigned int crc32_iscsi(unsigned char *buffer, int len, unsigned int crc_init)
 {

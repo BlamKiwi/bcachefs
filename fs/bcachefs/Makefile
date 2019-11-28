@@ -1,5 +1,6 @@
 
-obj-$(CONFIG_BCACHEFS_FS)		+= bcachefs.o
+obj-$(CONFIG_BCACHEFS_FS)				+= bcachefs.o
+obj-$(CONFIG_BCACHEFS_ISAL_BACKEND)		+= isa-l/
 
 bcachefs-y	:=	\
 	acl.o			\
@@ -56,4 +57,3 @@ bcachefs-y	:=	\
 	trace.o			\
 	util.o			\
 	xattr.o
-

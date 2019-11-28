@@ -37,7 +37,7 @@
 #ifndef _CRC_H_
 #define _CRC_H_
 
-#include <stdint.h>
+#include <linux/types.h>
 
 #ifdef __cplusplus
 extern "C" {
