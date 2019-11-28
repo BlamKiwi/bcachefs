@@ -35,9 +35,9 @@
 # 	This is a partially generated Makefile. In the end this should be made trivial by porting
 #	optimized assembly code to GAS compatible code.
 
-# 	Setup ISA-L compatible include paths.
+# 	Setup ISA-L build parameters.
 ISAL_INCLUDE = -I./fs/bcachefs/isa-l/include -I./fs/bcachefs/isa-l/crc 
-ccflags-y += $(ISAL_INCLUDE)
+ccflags-y += $(ISAL_INCLUDE) -O2 -Wall -D NDEBUG
 
 #   Build commands
 ASSEMBLE=nasm -f elf64 -D NDEBUG $(ISAL_INCLUDE) -DAS_FEATURE_LEVEL=10 -DHAVE_AS_KNOWS_AVX512
