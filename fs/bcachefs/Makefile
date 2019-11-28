@@ -3,7 +3,7 @@ obj-$(CONFIG_BCACHEFS_FS)				+= bcachefs.o
 obj-$(CONFIG_BCACHEFS_ISAL_BACKEND)		+= isa-l/
 
 bcachefs-y	:=	\
-	acceleration.o \
+	accel.o \
 	acl.o			\
 	alloc_background.o	\
 	alloc_foreground.o	\
