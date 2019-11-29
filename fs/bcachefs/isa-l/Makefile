@@ -36,7 +36,7 @@
 #	optimized assembly code to GAS compatible code.
 
 # 	Setup ISA-L build parameters.
-ISAL_INCLUDE = -I./fs/bcachefs/isa-l/include -I./fs/bcachefs/isa-l/crc 
+ISAL_INCLUDE = -I$(src)/include -I$(src)/crc
 ccflags-y += $(ISAL_INCLUDE) -O2 -Wall -D NDEBUG
 
 #   Build commands
@@ -45,7 +45,6 @@ ASSEMBLE=nasm -f elf64 -D NDEBUG $(ISAL_INCLUDE) -DAS_FEATURE_LEVEL=10 -DHAVE_AS
 # 	Combine C and ASM files
 obj-y += \
     crc/crc64_base.o \
-    crc/crc_base_aliases.o \
     crc/crc_base.o \
 	crc/crc64_ecma_norm_by8.o \
 	crc/crc64_iso_refl_by16_10.o \
