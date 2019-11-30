@@ -6,8 +6,11 @@
 #include <linux/vmalloc.h>
 #include <linux/ktime.h>
 #include <asm/fpu/api.h>
+
+#ifdef CONFIG_BCACHEFS_ISAL_BACKEND
 #include "isal/include/crc.h"
 #include "isal/include/crc64.h"
+#endif
 
 static u64 kernel_crc64(u64 crc, const void* p, size_t len) {
 	return crc64_be(crc, p, len);
