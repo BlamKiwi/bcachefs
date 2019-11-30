@@ -43,7 +43,7 @@ ccflags-y += $(ISAL_INCLUDE) -O2 -Wall -D NDEBUG
 ASSEMBLE=nasm -f elf64 -D NDEBUG $(ISAL_INCLUDE) -DAS_FEATURE_LEVEL=10 -DHAVE_AS_KNOWS_AVX512
 
 # 	Combine C and ASM files
-obj-y += \
+obj-$(CONFIG-BCACHEFS_ISAL_BACKEND) += \
     crc/crc64_base.o \
     crc/crc_base.o \
 	crc/crc64_ecma_norm_by8.o \
