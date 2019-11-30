@@ -557,6 +557,11 @@ struct attribute *bch2_fs_files[] = {
 #ifdef CONFIG_BCACHEFS_TESTS
 	&sysfs_perf_test,
 #endif
+
+#ifdef CONFIG_BCACHEFS_ISAL_BACKEND
+	&sysfs_accel_bench,
+#endif
+
 	NULL
 };
 
