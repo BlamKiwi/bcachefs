@@ -50,7 +50,7 @@ config BCACHEFS_TESTS
 	Include some unit and performance tests for the core btree code
 
 config BCACHEFS_ISAL_BACKEND
-	tristate "bcachefs ISA-L acceleration" 
+	bool "bcachefs ISA-L acceleration" 
 	depends on BCACHEFS_FS
 	---help---
 	ISA-L is a collection of optimized low-level functions targeting 
@@ -72,7 +72,7 @@ config BCACHEFS_ISAL_BACKEND
 	* AVX512
 	* NEON
 
-config BCACHEFS_ERASURE
+config BCACHEFS_ISAL_ERASURE
 	bool "bcachefs Erasure Coding support"
 	depends on BCACHEFS_ISAL_BACKEND
 	---help---

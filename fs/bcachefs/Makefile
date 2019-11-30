@@ -1,8 +1,8 @@
+obj-$(CONFIG_BCACHEFS_FS)	+= \
+	bcachefs.o \
+	isal/
 
-obj-$(CONFIG_BCACHEFS_FS)				+= bcachefs.o
-obj-$(CONFIG_BCACHEFS_ISAL_BACKEND)		+= isa-l/
-
-bcachefs-y	:=	\
+bcachefs-y	+=	\
 	accel.o \
 	acl.o			\
 	alloc_background.o	\
@@ -57,4 +57,4 @@ bcachefs-y	:=	\
 	tests.o			\
 	trace.o			\
 	util.o			\
-	xattr.o
+	xattr.o			

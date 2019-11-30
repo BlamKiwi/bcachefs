@@ -6,8 +6,8 @@
 #include <linux/vmalloc.h>
 #include <linux/ktime.h>
 #include <asm/fpu/api.h>
-#include "isa-l/include/crc.h"
-#include "isa-l/include/crc64.h"
+#include "isal/include/crc.h"
+#include "isal/include/crc64.h"
 
 static u64 kernel_crc64(u64 crc, const void* p, size_t len) {
 	return crc64_be(crc, p, len);
