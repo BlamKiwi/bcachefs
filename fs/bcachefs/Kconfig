@@ -56,21 +56,8 @@ config BCACHEFS_ISAL_BACKEND
 	ISA-L is a collection of optimized low-level functions targeting 
 	storage applications. Includes GF(256) Erasure Coding, CRC, RAID XOR, 
 	RAID P+Q and DEFALTE. Enabling this build option will complement Kernel 
-	provided functions with vendor optimized functions. 
-	
-	* RAID5
-	* RAID6
-	* CRC32C
-	* CRC64
-	* GZIP Compression
-
-	A CPU with one of following instruction sets is recommended:
-
-	* SSE2
-	* SSE4_2
-	* AVX2
-	* AVX512
-	* NEON
+	provided functions with vendor optimized functions. A CPU with NEON or SSE4_2
+	or above is recommended.
 
 config BCACHEFS_ISAL_ERASURE
 	bool "bcachefs Erasure Coding support"
