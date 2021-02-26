@@ -21,6 +21,7 @@
 #include "clock.h"
 #include "compress.h"
 #include "debug.h"
+#include "delayed.h"
 #include "disk_groups.h"
 #include "ec.h"
 #include "error.h"
@@ -468,6 +469,7 @@ static void __bch2_fs_free(struct bch_fs *c)
 
 	bch2_fs_quota_exit(c);
 	bch2_fs_fsio_exit(c);
+	bch2_fs_delayed_exit(c);
 	bch2_fs_ec_exit(c);
 	bch2_fs_encryption_exit(c);
 	bch2_fs_io_exit(c);
@@ -787,6 +789,7 @@ static struct bch_fs *bch2_fs_alloc(struct bch_sb *sb, struct bch_opts opts)
 	    bch2_fs_encryption_init(c) ||
 	    bch2_fs_compress_init(c) ||
 	    bch2_fs_ec_init(c) ||
+		bch2_fs_delayed_init(c) ||
 	    bch2_fs_fsio_init(c))
 		goto err;
 

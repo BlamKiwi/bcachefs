@@ -350,6 +350,7 @@ enum bch_time_stats {
 #include "rebalance_types.h"
 #include "replicas_types.h"
 #include "super_types.h"
+#include "delayed_types.h"
 
 /* Number of nodes btree coalesce will try to coalesce at once */
 #define GC_MERGE_NODES		4U
@@ -779,6 +780,9 @@ struct bch_fs {
 
 	ec_stripes_heap		ec_stripes_heap;
 	spinlock_t		ec_stripes_heap_lock;
+
+	/* BARRIERS */
+	struct bch2_delayed_controller delayed_cntl;
 
 	/* ERASURE CODING */
 	struct list_head	ec_stripe_head_list;
